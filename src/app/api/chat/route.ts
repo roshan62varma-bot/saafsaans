@@ -25,7 +25,7 @@ export const POST = jsonRoute({
         "The AI assistant is not configured. Your plan and dashboard still work.",
       );
     }
-    const stream = streamChat(model, facts, profile, messages, logStreamError);
+    const stream = streamChat({ model, facts, profile, messages, onError: logStreamError });
     return new Response(stream, { headers: STREAM_HEADERS });
   },
 });

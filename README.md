@@ -91,7 +91,13 @@ Pure functions with no I/O, which makes them easy to test and audit:
 
 ## Quality by evaluation area
 
-**Code quality.** TypeScript in `strict` mode with `noUncheckedIndexedAccess`. ESLint (Next, TypeScript, jsx-a11y _strict_) runs with zero warnings, and Prettier is enforced. Modules have single responsibilities: the pure engine, I/O adapters, the AI layer, services, thin route handlers and presentational components. Every constant is named, sourced and kept in one file. Services take injected dependencies so they are testable.
+**Code quality.**
+
+- TypeScript in `strict` mode with `noUncheckedIndexedAccess`, and no `any`.
+- ESLint (Next, TypeScript, jsx-a11y _strict_) runs with zero warnings, and Prettier and EditorConfig are enforced.
+- **Maintainability budgets fail CI if exceeded:** cyclomatic complexity ≤ 10, ≤ 4 parameters, nesting depth ≤ 3, ≤ 80 lines per function, ≤ 250 lines per file, and no nested ternaries.
+- Modules have single responsibilities: the pure engine, I/O adapters, the AI layer, services, one shared route pipeline (`jsonRoute`), hooks for stateful UI logic (`useProfileForm`, `usePlaceSearch`, `useChat`) and small presentational components.
+- Every constant is named, sourced and kept in one file. Services take injected dependencies so they are testable.
 
 **Security.** See [SECURITY.md](SECURITY.md). Highlights: the API key stays server-side; every input is validated with Zod and size-capped; per-client rate limiting; a nonce-based strict CSP and a full set of security headers; prompt-injection fencing; the numeric grounding guard; cache keys that never cross households; no stored personal data.
 
@@ -169,17 +175,22 @@ Import the repository in Vercel, set `GOOGLE_GENERATIVE_AI_API_KEY` (and optiona
 src/
   app/                  layout, page, manifest, icon, error boundary
     api/                geocode · insights · plan · chat · advisory (thin handlers)
-  components/           ProfileForm, PlacePicker, Dashboard, AirNow, ForecastChart, FamilyRisk,
-                        PlanView, IndoorHacks, ImpactCalculator, AskAssistant, CommunityAdvisory, ui/*
+  components/           top-level views: ProfileForm, Dashboard, AirNow, PlanView, ImpactCalculator,
+                        AskAssistant, CommunityAdvisory, ForecastChart, IndoorHacks, FamilyRisk
+    profile/ place/     form sections and hooks (useProfileForm, usePlaceSearch)
+    air/ plan/ forecast/ dashboard/ impact/ chat/ advisory/   focused sub-components and hooks
+    ui/                 reusable accessible primitives (SelectField, TextField, CheckboxCard,
+                        ChoiceGroup, ErrorSummary, AsyncContent, StatTile, Section, badges)
   lib/
     engine/             aqi · risk · windows · impact · indoor · facts · routine · advisory (pure)
-    ai/                 model · prompts · generate · grounding
+    ai/                 model (failover) · prompts · generate · grounding · chatStream
     air/                Open-Meteo air quality + geocoding clients
     services/           assistant orchestration (DI, caching, fallbacks)
     security/           rate limiting, sanitising
-    client/             browser-only helpers (API client, profile store, form model, hooks)
+    client/             browser-only helpers (API client, profile store, form model, impact summaries)
     constants.ts        every factor and threshold, with sources
     schemas.ts          Zod schemas shared by client and server
+    utils.ts            small typed helpers (typedEntries, typedKeys, roundCoord)
   proxy.ts              per-request nonce CSP
 tests/                  unit · api · components · e2e
 ```

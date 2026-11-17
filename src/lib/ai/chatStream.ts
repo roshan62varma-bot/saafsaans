@@ -20,6 +20,53 @@ type ChatPart =
   | { type: "finish"; finishReason: string }
   | { type: string };
 
+type Notices = (typeof CHAT_NOTICES)[Language];
+
+/**
+ * Tracks what has been sent to the browser and which closing notice (if any) is owed.
+ * Each stream event is handled by one small method.
+ */
+class ChatTranscript {
+  private wrote = false;
+  private notice: string | null = null;
+
+  constructor(
+    private readonly notices: Notices,
+    private readonly write: (text: string) => void,
+    private readonly onError: (error: unknown) => void,
+  ) {}
+
+  accept(part: ChatPart): void {
+    if (part.type === "text-delta" && "text" in part) this.text(part.text);
+    else if (part.type === "error" && "error" in part) this.fail(part.error);
+    else if (part.type === "finish" && "finishReason" in part) this.finish(part.finishReason);
+  }
+
+  /** A thrown or reported stream error still ends in a readable answer. */
+  fail(error: unknown): void {
+    this.onError(error);
+    this.notice = this.notices.interrupted;
+  }
+
+  close(): void {
+    if (!this.notice) return;
+    this.write(this.wrote ? `\n\n${this.notice}` : this.notice);
+  }
+
+  private text(text: string): void {
+    this.write(text);
+    this.wrote ||= text.length > 0;
+  }
+
+  private finish(reason: string): void {
+    if (reason === "content-filter") {
+      this.notice = this.wrote ? this.notices.interrupted : this.notices.declined;
+    } else if (reason !== "stop" || !this.wrote) {
+      this.notice ??= this.notices.interrupted;
+    }
+  }
+}
+
 /**
  * Converts model stream parts into UTF-8 text for the browser. Instead of stopping
  * silently, an interrupted stream (overload, token limit) or a safety block ends with a
@@ -31,40 +78,19 @@ export function toChatTextStream(
   onError: (error: unknown) => void,
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
-  const notices = CHAT_NOTICES[language];
   return new ReadableStream({
     async start(controller) {
-      let wrote = false;
-      let notice: string | null = null;
+      const transcript = new ChatTranscript(
+        CHAT_NOTICES[language],
+        (text) => controller.enqueue(encoder.encode(text)),
+        onError,
+      );
       try {
-        for await (const part of parts) {
-          if (part.type === "text-delta" && "text" in part) {
-            controller.enqueue(encoder.encode(part.text));
-            wrote ||= part.text.length > 0;
-          } else if (part.type === "error" && "error" in part) {
-            onError(part.error);
-            notice = notices.interrupted;
-          } else if (part.type === "finish" && "finishReason" in part) {
-            if (part.finishReason === "content-filter")
-              notice = wrote ? notices.interrupted : notices.declined;
-            else if (part.finishReason !== "stop" || !wrote) notice ??= notices.interrupted;
-          }
-        }
+        for await (const part of parts) transcript.accept(part);
       } catch (error) {
-        // A thrown stream error (e.g. an abort) must still end in a readable answer.
-        onError(error);
-        notice = notices.interrupted;
+        transcript.fail(error);
       }
-      if (notice)
-        controller.enqueue(
-          encoder.encode(
-            wrote
-              ? `
-
-${notice}`
-              : notice,
-          ),
-        );
+      transcript.close();
       controller.close();
     },
   });

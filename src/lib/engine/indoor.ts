@@ -69,6 +69,9 @@ interface CatalogEntry {
   build: (ctx: HackContext) => IndoorHack;
 }
 
+/** Draughty homes gain the most from sealing; already sealed homes the least. */
+const SEALING_PRIORITY: Record<HomeSealing, number> = { leaky: 8, average: 5, sealed: 1 };
+
 const pct = (from: number, to: number) => (from > 0 ? Math.round(((from - to) / from) * 100) : 0);
 
 const CATALOG: readonly CatalogEntry[] = [
@@ -103,8 +106,7 @@ const CATALOG: readonly CatalogEntry[] = [
     }),
   },
   {
-    priority: ({ profile }) =>
-      profile.sealing === "leaky" ? 8 : profile.sealing === "average" ? 5 : 1,
+    priority: ({ profile }) => SEALING_PRIORITY[profile.sealing],
     build: ({ profile, outdoorPm25, purifier }) => {
       const before = indoorPm25(outdoorPm25, profile.sealing, purifier.roomVolumeM3, 0);
       const after = indoorPm25(outdoorPm25, "sealed", purifier.roomVolumeM3, 0);

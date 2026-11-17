@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import type { FormEvent } from "react";
+import { ChatLog } from "@/components/chat/ChatLog";
+import { useChat } from "@/components/chat/useChat";
 import { LIMITS } from "@/lib/constants";
-import { isAbort, messageOf, postRaw, readTextStream } from "@/lib/client/api";
-import type { ChatMessage, Profile } from "@/lib/types";
+import type { Profile } from "@/lib/types";
 
 const SUGGESTIONS = [
   "Is it safe for my kids to play outside today?",
@@ -14,83 +15,16 @@ const SUGGESTIONS = [
 
 /** Streaming Q&A grounded in the household's live facts. */
 export function AskAssistant({ profile }: { profile: Profile }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [draft, setDraft] = useState("");
-  const [streaming, setStreaming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const controllerRef = useRef<AbortController | null>(null);
+  const { messages, draft, setDraft, streaming, error, ask } = useChat(profile);
 
-  useEffect(() => () => controllerRef.current?.abort(), []);
-
-  async function ask(question: string) {
-    const content = question.trim();
-    if (!content || streaming) return;
-    const history: ChatMessage[] = [...messages, { role: "user" as const, content }].slice(
-      -LIMITS.maxChatMessages,
-    );
-    setMessages([...history, { role: "assistant", content: "" }]);
-    setDraft("");
-    setError(null);
-    setStreaming(true);
-
-    const controller = new AbortController();
-    controllerRef.current = controller;
-    try {
-      const response = await postRaw(
-        "/api/chat",
-        { profile, messages: history },
-        controller.signal,
-      );
-      const answer = await readTextStream(response, (text) =>
-        setMessages([...history, { role: "assistant", content: text }]),
-      );
-      if (!answer.trim()) throw new Error("Empty answer");
-    } catch (e) {
-      if (isAbort(e)) return;
-      setMessages(history.slice(0, -1));
-      setDraft(content);
-      setError(messageOf(e));
-    } finally {
-      setStreaming(false);
-    }
-  }
-
-  function handleSubmit(event: FormEvent) {
+  const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     void ask(draft);
-  }
+  };
 
   return (
     <div className="card space-y-4">
-      <div
-        role="log"
-        tabIndex={0}
-        aria-live="polite"
-        aria-busy={streaming}
-        aria-label="Conversation with the assistant"
-        className="max-h-[28rem] space-y-3 overflow-y-auto"
-        lang={profile.language}
-      >
-        {messages.length === 0 ? (
-          <p className="text-muted">
-            Ask anything about today&apos;s air, your family&apos;s health or cleaner habits.
-          </p>
-        ) : (
-          messages.map((m, i) => (
-            <div
-              key={i}
-              className={
-                m.role === "user"
-                  ? "ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-4 py-2 text-accent-ink"
-                  : "max-w-[90%] whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-surface-2 px-4 py-2"
-              }
-            >
-              <span className="sr-only">{m.role === "user" ? "You said: " : "Assistant: "}</span>
-              {m.content || (streaming && i === messages.length - 1 ? "Thinking…" : "")}
-            </div>
-          ))
-        )}
-      </div>
+      <ChatLog messages={messages} streaming={streaming} language={profile.language} />
 
       {error && (
         <p role="alert" className="error-text">
@@ -100,15 +34,15 @@ export function AskAssistant({ profile }: { profile: Profile }) {
 
       {messages.length === 0 && (
         <div className="flex flex-wrap gap-2" aria-label="Suggested questions" role="group">
-          {SUGGESTIONS.map((s) => (
+          {SUGGESTIONS.map((question) => (
             <button
-              key={s}
+              key={question}
               type="button"
               className="btn btn-secondary text-sm"
-              onClick={() => void ask(s)}
+              onClick={() => void ask(question)}
               disabled={streaming}
             >
-              {s}
+              {question}
             </button>
           ))}
         </div>

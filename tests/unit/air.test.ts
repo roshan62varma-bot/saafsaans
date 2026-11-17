@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { __geocodeCache, parseGeocodeResponse, searchPlaces } from "@/lib/air/geocode";
-import { __airCache, buildAirUrl, getAir, parseAirResponse, roundCoord } from "@/lib/air/openMeteo";
+import { __airCache, buildAirUrl, getAir, parseAirResponse } from "@/lib/air/openMeteo";
+import { roundCoord } from "@/lib/utils";
 import { rawAir } from "../fixtures";
 
 const place = { name: "New Delhi", latitude: 28.6139, longitude: 77.209 };

@@ -110,51 +110,57 @@ export function treesEquivalent(weeklyCo2Kg: number): number {
 
 /** Household-level swaps relevant to this profile, largest PM2.5 cut first. */
 export function householdSwaps(profile: Pick<Profile, "cookingFuel">): HouseholdSwap[] {
-  const pm = HOUSEHOLD_PM_G_PER_WEEK;
-  const swaps: HouseholdSwap[] = [];
-
-  if (profile.cookingFuel === "biomass" || profile.cookingFuel === "kerosene") {
-    const before = profile.cookingFuel === "biomass" ? pm.biomassCooking : pm.keroseneCooking;
-    const saved = round(before - pm.gasCooking);
-    swaps.push({
-      id: "clean-cooking",
-      title: "Switch to LPG / PNG or induction cooking",
-      change: `Replace ${profile.cookingFuel} with gas or electric cooking (PM Ujjwala Yojana offers subsidised LPG).`,
-      weeklyPmGramsSaved: saved,
-      weeklyCo2KgSaved: 0,
-      impact: `Cuts about ${saved} g of PM2.5 a week released inside your kitchen — the single biggest indoor source.`,
-    });
-  }
-
-  swaps.push(
-    {
-      id: "no-open-burning",
-      title: "Compost or hand over leaves and waste — never burn",
-      change:
-        "Use the society compost pit or municipal pickup instead of burning dry leaves or garbage.",
-      weeklyPmGramsSaved: pm.openBurning,
-      weeklyCo2KgSaved: HOUSEHOLD_CO2_KG_PER_WEEK.openBurning,
-      impact: `Avoids about ${pm.openBurning} g of PM2.5 a week at street level, where children walk to school.`,
-    },
-    {
-      id: "inverter-not-genset",
-      title: "Use an inverter battery instead of a diesel generator",
-      change:
-        "Run essential loads on an inverter during power cuts; GRAP bans diesel gensets in severe smog.",
-      weeklyPmGramsSaved: pm.dieselGenerator,
-      weeklyCo2KgSaved: HOUSEHOLD_CO2_KG_PER_WEEK.dieselGenerator,
-      impact: `Avoids about ${pm.dieselGenerator} g of PM2.5 and ${HOUSEHOLD_CO2_KG_PER_WEEK.dieselGenerator} kg of CO2 a week.`,
-    },
-    {
-      id: "no-mosquito-coil",
-      title: "Swap mosquito coils and incense for nets or plug-in repellents",
-      change: "Use bed nets, window mesh or electric vaporisers indoors.",
-      weeklyPmGramsSaved: pm.mosquitoCoil,
-      weeklyCo2KgSaved: 0,
-      impact:
-        "One burning coil releases as much PM2.5 as roughly 100 cigarettes — inside a closed bedroom.",
-    },
+  const cooking = cleanCookingSwap(profile.cookingFuel);
+  return [...(cooking ? [cooking] : []), ...UNIVERSAL_SWAPS].sort(
+    (a, b) => b.weeklyPmGramsSaved - a.weeklyPmGramsSaved,
   );
-
-  return swaps.sort((a, b) => b.weeklyPmGramsSaved - a.weeklyPmGramsSaved);
 }
+
+/** Swap to gas or induction, only for households that cook with solid fuel or kerosene. */
+function cleanCookingSwap(fuel: Profile["cookingFuel"]): HouseholdSwap | null {
+  if (fuel !== "biomass" && fuel !== "kerosene") return null;
+  const before = fuel === "biomass" ? PM.biomassCooking : PM.keroseneCooking;
+  const saved = round(before - PM.gasCooking);
+  return {
+    id: "clean-cooking",
+    title: "Switch to LPG / PNG or induction cooking",
+    change: `Replace ${fuel} with gas or electric cooking (PM Ujjwala Yojana offers subsidised LPG).`,
+    weeklyPmGramsSaved: saved,
+    weeklyCo2KgSaved: 0,
+    impact: `Cuts about ${saved} g of PM2.5 a week released inside your kitchen — the single biggest indoor source.`,
+  };
+}
+
+const PM = HOUSEHOLD_PM_G_PER_WEEK;
+const CO2 = HOUSEHOLD_CO2_KG_PER_WEEK;
+
+/** Swaps that apply to every household. */
+const UNIVERSAL_SWAPS: readonly HouseholdSwap[] = [
+  {
+    id: "no-open-burning",
+    title: "Compost or hand over leaves and waste — never burn",
+    change:
+      "Use the society compost pit or municipal pickup instead of burning dry leaves or garbage.",
+    weeklyPmGramsSaved: PM.openBurning,
+    weeklyCo2KgSaved: CO2.openBurning,
+    impact: `Avoids about ${PM.openBurning} g of PM2.5 a week at street level, where children walk to school.`,
+  },
+  {
+    id: "inverter-not-genset",
+    title: "Use an inverter battery instead of a diesel generator",
+    change:
+      "Run essential loads on an inverter during power cuts; GRAP bans diesel gensets in severe smog.",
+    weeklyPmGramsSaved: PM.dieselGenerator,
+    weeklyCo2KgSaved: CO2.dieselGenerator,
+    impact: `Avoids about ${PM.dieselGenerator} g of PM2.5 and ${CO2.dieselGenerator} kg of CO2 a week.`,
+  },
+  {
+    id: "no-mosquito-coil",
+    title: "Swap mosquito coils and incense for nets or plug-in repellents",
+    change: "Use bed nets, window mesh or electric vaporisers indoors.",
+    weeklyPmGramsSaved: PM.mosquitoCoil,
+    weeklyCo2KgSaved: 0,
+    impact:
+      "One burning coil releases as much PM2.5 as roughly 100 cigarettes — inside a closed bedroom.",
+  },
+];

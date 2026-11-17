@@ -2,6 +2,7 @@ import { z } from "zod";
 import { CACHE_TTL } from "@/lib/constants";
 import { TtlCache } from "@/lib/cache";
 import { UpstreamError, fetchJson } from "@/lib/http";
+import { roundCoord } from "@/lib/utils";
 import type { AirReading, AirSnapshot, Place } from "@/lib/types";
 
 /** Open-Meteo Air Quality API (CAMS global forecast). Free, keyless, CC BY 4.0. */
@@ -31,9 +32,6 @@ const responseSchema = z.object({
 });
 
 type RawResponse = z.infer<typeof responseSchema>;
-
-/** Coordinates are rounded to ~1 km so the cache is shared by neighbours and no precise location is sent upstream. */
-export const roundCoord = (n: number) => Math.round(n * 100) / 100;
 
 export function buildAirUrl(latitude: number, longitude: number): string {
   const params = new URLSearchParams({

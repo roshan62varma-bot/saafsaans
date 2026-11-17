@@ -1,27 +1,16 @@
 "use client";
 
-import { AirNow } from "@/components/AirNow";
 import { AskAssistant } from "@/components/AskAssistant";
 import { CommunityAdvisory } from "@/components/CommunityAdvisory";
-import { FamilyRisk } from "@/components/FamilyRisk";
-import { ForecastChart } from "@/components/ForecastChart";
+import { DashboardHeader } from "@/components/DashboardHeader";
+import { AirSection, PlanSection } from "@/components/dashboard/Sections";
 import { ImpactCalculator } from "@/components/ImpactCalculator";
 import { IndoorHacks } from "@/components/IndoorHacks";
-import { PlanView } from "@/components/PlanView";
+import { AsyncContent } from "@/components/ui/AsyncContent";
 import { Section } from "@/components/ui/Section";
-import { ErrorNotice, Loading } from "@/components/ui/Status";
 import { postJson } from "@/lib/client/api";
 import { useRequest } from "@/lib/client/useRequest";
 import type { InsightsResponse, PlanResponse, Profile } from "@/lib/types";
-
-const NAV = [
-  ["air", "Air now"],
-  ["plan", "Today's plan"],
-  ["indoor", "Indoor air"],
-  ["impact", "Your impact"],
-  ["ask", "Ask"],
-  ["community", "Community"],
-] as const;
 
 interface Props {
   profile: Profile;
@@ -42,80 +31,18 @@ export function Dashboard({ profile, onEdit }: Props) {
 
   return (
     <div className="space-y-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold sm:text-4xl">Your smog-season plan</h1>
-          <p className="text-muted">
-            {profile.place.name} · {profile.members.length}{" "}
-            {profile.members.length === 1 ? "person" : "people"}
-          </p>
-        </div>
-        <button type="button" className="btn btn-secondary" onClick={onEdit}>
-          Edit household
-        </button>
-      </div>
-
-      <nav
-        aria-label="Dashboard sections"
-        className="sticky top-0 z-10 -mx-4 border-b border-line bg-paper/95 px-4 py-2 backdrop-blur"
-      >
-        <ul className="flex gap-1 overflow-x-auto">
-          {NAV.map(([id, label]) => (
-            <li key={id}>
-              <a
-                href={`#${id}`}
-                className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-3 font-bold hover:bg-surface-2"
-              >
-                {label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <Section
-        id="air"
-        title="Air right now"
-        intro="Live readings and the next 36 hours, translated into what they mean for you."
-      >
-        {insights.error ? (
-          <ErrorNotice message={insights.error} onRetry={insights.retry} />
-        ) : !insights.data || !facts ? (
-          <Loading label="Loading live air quality…" lines={5} />
-        ) : (
-          <>
-            <AirNow facts={facts} />
-            <ForecastChart points={insights.data.forecast} />
-            <h3 className="text-xl font-bold">Risk for each person</h3>
-            <FamilyRisk risks={facts.memberRisks} />
-          </>
-        )}
-      </Section>
-
-      <Section
-        id="plan"
-        title="Today's low-exposure routine"
-        intro="Every step explains why it matters and what it changes."
-      >
-        {plan.error ? (
-          <ErrorNotice message={plan.error} onRetry={plan.retry} />
-        ) : !plan.data ? (
-          <Loading label="Writing your personalised plan…" lines={6} />
-        ) : (
-          <PlanView plan={plan.data.plan} source={plan.data.source} language={profile.language} />
-        )}
-      </Section>
+      <DashboardHeader profile={profile} onEdit={onEdit} />
+      <AirSection insights={insights} />
+      <PlanSection plan={plan} language={profile.language} />
 
       <Section
         id="indoor"
         title="Indoor air hacks"
         intro="Ranked for your home, cooking fuel and budget."
       >
-        {facts ? (
-          <IndoorHacks hacks={facts.indoorHacks} purifier={facts.purifier} />
-        ) : (
-          <Loading label="Loading indoor tips…" />
-        )}
+        <AsyncContent data={facts} loadingLabel="Loading indoor tips…">
+          {(f) => <IndoorHacks hacks={f.indoorHacks} purifier={f.purifier} />}
+        </AsyncContent>
       </Section>
 
       <Section
@@ -123,11 +50,9 @@ export function Dashboard({ profile, onEdit }: Props) {
         title="Your impact"
         intro="See exactly how much cleaner choices cut emissions and your own exposure."
       >
-        {facts ? (
-          <ImpactCalculator facts={facts} />
-        ) : (
-          <Loading label="Loading impact calculator…" />
-        )}
+        <AsyncContent data={facts} loadingLabel="Loading impact calculator…">
+          {(f) => <ImpactCalculator facts={f} />}
+        </AsyncContent>
       </Section>
 
       <Section

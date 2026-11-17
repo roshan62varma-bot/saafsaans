@@ -64,14 +64,22 @@ export async function generateAdvisory(
   return message;
 }
 
+export interface ChatRequest {
+  model: LanguageModel;
+  facts: FactSheet;
+  profile: Profile;
+  messages: readonly ChatMessage[];
+  onError: (error: unknown) => void;
+}
+
 /** Streams a chat answer grounded in the household's facts, as plain UTF-8 text. */
-export function streamChat(
-  model: LanguageModel,
-  facts: FactSheet,
-  profile: Profile,
-  messages: readonly ChatMessage[],
-  onError: (error: unknown) => void,
-): ReadableStream<Uint8Array> {
+export function streamChat({
+  model,
+  facts,
+  profile,
+  messages,
+  onError,
+}: ChatRequest): ReadableStream<Uint8Array> {
   const result = streamText({
     ...COMMON,
     model,
