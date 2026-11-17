@@ -73,8 +73,8 @@ export function getModel(
   if (!apiKey) return null;
   const google = createGoogle({ apiKey });
   const primary = env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
-  const ids = [...new Set([primary, FALLBACK_GEMINI_MODEL])];
-  return withFailover(ids.map((id) => google(id)) as [LanguageModelV4, ...LanguageModelV4[]]);
+  const fallback = primary === FALLBACK_GEMINI_MODEL ? [] : [google(FALLBACK_GEMINI_MODEL)];
+  return withFailover([google(primary), ...fallback]);
 }
 
 /**

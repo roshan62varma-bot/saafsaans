@@ -28,6 +28,11 @@ export function hourLabel(time: string): string {
   return time.slice(11, 16);
 }
 
+/** `13:00–15:00` style label for a time window. */
+export function windowSpan(window: Pick<TimeWindow, "start" | "end">): string {
+  return `${hourLabel(window.start)}–${hourLabel(window.end)}`;
+}
+
 /** Readings from the current hour up to the look-ahead horizon that report PM2.5. */
 export function upcoming(
   hourly: readonly AirReading[],

@@ -6,7 +6,7 @@ import {
   PENETRATION,
   TARGET_FILTERED_ACH,
 } from "@/lib/constants";
-import { hourLabel } from "@/lib/engine/windows";
+import { windowSpan } from "@/lib/engine/windows";
 import type {
   Budget,
   Cost,
@@ -128,7 +128,7 @@ const CATALOG: readonly CatalogEntry[] = [
       title: "Keep windows shut — air out only in the cleanest hour",
       steps: [
         ventilation
-          ? `Open windows for 10–15 minutes around ${hourLabel(ventilation.start)}–${hourLabel(ventilation.end)}, when PM2.5 is forecast at ${ventilation.avgPm25} µg/m³.`
+          ? `Open windows for 10–15 minutes around ${windowSpan(ventilation)}, when PM2.5 is forecast at ${ventilation.avgPm25} µg/m³.`
           : "Open windows for 10–15 minutes in the early afternoon, when smog usually lifts.",
         "Keep them closed in the early morning and after sunset, when cold air traps smoke near the ground.",
       ],

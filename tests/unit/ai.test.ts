@@ -1,13 +1,8 @@
 import { generateText } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it, vi } from "vitest";
-import {
-  CHAT_NOTICES,
-  generateAdvisory,
-  generatePlan,
-  streamChat,
-  toChatTextStream,
-} from "@/lib/ai/generate";
+import { CHAT_NOTICES, toChatTextStream } from "@/lib/ai/chatStream";
+import { generateAdvisory, generatePlan, streamChat } from "@/lib/ai/generate";
 import { extractNumbers, isGrounded, ungroundedNumbers } from "@/lib/ai/grounding";
 import {
   DEFAULT_GEMINI_MODEL,

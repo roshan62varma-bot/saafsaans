@@ -2,12 +2,10 @@ import { AQI_LABELS, MODE_FACTORS } from "@/lib/constants";
 import { categoryRank } from "@/lib/engine/aqi";
 import { round } from "@/lib/engine/impact";
 import { householdRisk } from "@/lib/engine/risk";
-import { hourLabel } from "@/lib/engine/windows";
-import type { FactSheet, Plan, Profile, RoutineBlock, TimeWindow } from "@/lib/types";
+import { windowSpan as span } from "@/lib/engine/windows";
+import type { FactSheet, Plan, Profile, RoutineBlock } from "@/lib/types";
 
 const POOR_RANK = categoryRank("poor");
-
-const span = (w: TimeWindow) => `${hourLabel(w.start)}–${hourLabel(w.end)}`;
 
 function exerciseBlock(facts: FactSheet): RoutineBlock {
   const tooPolluted = categoryRank(facts.aqi.category) >= POOR_RANK;

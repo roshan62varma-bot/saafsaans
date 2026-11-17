@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { LIMITS } from "@/lib/constants";
-import { isAbort, messageOf, postRaw } from "@/lib/client/api";
+import { isAbort, messageOf, postRaw, readTextStream } from "@/lib/client/api";
 import type { ChatMessage, Profile } from "@/lib/types";
 
 const SUGGESTIONS = [
@@ -41,16 +41,9 @@ export function AskAssistant({ profile }: { profile: Profile }) {
         { profile, messages: history },
         controller.signal,
       );
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("No response body");
-      const decoder = new TextDecoder();
-      let answer = "";
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        answer += decoder.decode(value, { stream: true });
-        setMessages([...history, { role: "assistant", content: answer }]);
-      }
+      const answer = await readTextStream(response, (text) =>
+        setMessages([...history, { role: "assistant", content: text }]),
+      );
       if (!answer.trim()) throw new Error("Empty answer");
     } catch (e) {
       if (isAbort(e)) return;

@@ -1,6 +1,6 @@
 import { AQI_LABELS } from "@/lib/constants";
 import { categoryRank } from "@/lib/engine/aqi";
-import { hourLabel } from "@/lib/engine/windows";
+import { windowSpan as span } from "@/lib/engine/windows";
 import type { AqiCategory, Audience, FactSheet, Language } from "@/lib/types";
 
 const AQI_LABELS_HI: Record<AqiCategory, string> = {
@@ -62,8 +62,6 @@ const COPY: Record<Language, Copy> = {
     emergency: "सांस फूलना या सीने में दर्द? तुरंत 112 पर कॉल करें।",
   },
 };
-
-const span = (w: { start: string; end: string }) => `${hourLabel(w.start)}–${hourLabel(w.end)}`;
 
 /** Ready-to-share advisory built from facts alone (used when Gemini is unavailable). */
 export function buildRuleAdvisory(

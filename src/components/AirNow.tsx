@@ -1,9 +1,8 @@
 import { AqiBadge } from "@/components/ui/AqiBadge";
 import { AQI_HEALTH, WHO_PM25_24H } from "@/lib/constants";
-import { hourLabel } from "@/lib/engine/windows";
+import { hourLabel, windowSpan as span } from "@/lib/engine/windows";
 import type { FactSheet, TimeWindow } from "@/lib/types";
 
-const span = (w: TimeWindow) => `${hourLabel(w.start)}–${hourLabel(w.end)}`;
 const dayOf = (w: TimeWindow, today: string) =>
   w.start.slice(0, 10) === today ? "today" : "tomorrow";
 

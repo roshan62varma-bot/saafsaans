@@ -4,9 +4,8 @@ import { useState } from "react";
 import { ChoiceGroup } from "@/components/ui/ChoiceGroup";
 import { AUDIENCE_LABELS, LANGUAGE_LABELS } from "@/lib/client/labels";
 import { messageOf, postJson } from "@/lib/client/api";
+import { typedEntries as entries } from "@/lib/utils";
 import type { AdvisoryResponse, Audience, Language, Profile } from "@/lib/types";
-
-const entries = <K extends string, V>(r: Record<K, V>) => Object.entries(r) as [K, V][];
 
 /** Generates a shareable advisory for a school, society, workplace or family group. */
 export function CommunityAdvisory({ profile }: { profile: Profile }) {

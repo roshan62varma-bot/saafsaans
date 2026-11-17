@@ -87,3 +87,27 @@ export function handleRouteError(error: unknown): Response {
   console.error("Unhandled route error", error instanceof Error ? error.name : "unknown");
   return jsonError(500, "Something went wrong on our side. Please try again.");
 }
+
+interface JsonRouteOptions<S extends z.ZodType> {
+  limiter: RateLimiter;
+  schema: S;
+  handle: (body: z.infer<S>) => Promise<Response>;
+}
+
+/**
+ * Builds a POST handler with the standard pipeline every JSON route shares:
+ * rate limit → size-capped, validated body → handler → safe error mapping.
+ */
+export function jsonRoute<S extends z.ZodType>({ limiter, schema, handle }: JsonRouteOptions<S>) {
+  return async function POST(request: Request): Promise<Response> {
+    const limited = enforceRateLimit(request, limiter);
+    if (limited) return limited;
+    const body = await parseJsonBody(request, schema);
+    if (!body.ok) return body.response;
+    try {
+      return await handle(body.data);
+    } catch (error) {
+      return handleRouteError(error);
+    }
+  };
+}

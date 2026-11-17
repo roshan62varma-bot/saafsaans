@@ -21,22 +21,33 @@ async function errorFrom(response: Response): Promise<ApiError> {
   return new ApiError(FALLBACK_MESSAGE, response.status);
 }
 
-/** Sends JSON and returns the raw response, throwing {@link ApiError} on non-2xx. */
-export async function postRaw(url: string, body: unknown, signal?: AbortSignal): Promise<Response> {
+export const isAbort = (error: unknown) =>
+  error instanceof DOMException && error.name === "AbortError";
+
+/**
+ * Single fetch wrapper for every API call: aborts propagate untouched, network failures
+ * and non-2xx responses become an {@link ApiError} with a user-safe message.
+ */
+async function request(url: string, init: RequestInit): Promise<Response> {
   let response: Response;
   try {
-    response = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-      signal,
-    });
+    response = await fetch(url, init);
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    if (isAbort(error)) throw error;
     throw new ApiError(FALLBACK_MESSAGE, 0);
   }
   if (!response.ok) throw await errorFrom(response);
   return response;
+}
+
+/** Sends JSON and returns the raw response (used for streaming). */
+export function postRaw(url: string, body: unknown, signal?: AbortSignal): Promise<Response> {
+  return request(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    signal,
+  });
 }
 
 export async function postJson<T>(url: string, body: unknown, signal?: AbortSignal): Promise<T> {
@@ -44,19 +55,28 @@ export async function postJson<T>(url: string, body: unknown, signal?: AbortSign
 }
 
 export async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
-  let response: Response;
-  try {
-    response = await fetch(url, { signal });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    throw new ApiError(FALLBACK_MESSAGE, 0);
-  }
-  if (!response.ok) throw await errorFrom(response);
-  return (await response.json()) as T;
+  return (await (await request(url, { signal })).json()) as T;
 }
 
-export const isAbort = (error: unknown) =>
-  error instanceof DOMException && error.name === "AbortError";
+/**
+ * Reads a streamed UTF-8 text response, reporting the accumulated text after every chunk.
+ * Resolves with the full text.
+ */
+export async function readTextStream(
+  response: Response,
+  onText: (textSoFar: string) => void,
+): Promise<string> {
+  const reader = response.body?.getReader();
+  if (!reader) throw new ApiError(FALLBACK_MESSAGE, response.status);
+  const decoder = new TextDecoder();
+  let text = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) return text;
+    text += decoder.decode(value, { stream: true });
+    onText(text);
+  }
+}
 
 export const messageOf = (error: unknown) =>
   error instanceof ApiError ? error.message : FALLBACK_MESSAGE;

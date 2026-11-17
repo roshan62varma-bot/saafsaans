@@ -3,10 +3,11 @@
 import { useId, useState } from "react";
 import { LIMITS, MODE_FACTORS } from "@/lib/constants";
 import { compareModes, round, treesEquivalent } from "@/lib/engine/impact";
+import { typedKeys } from "@/lib/utils";
 import type { CommuteMode, FactSheet } from "@/lib/types";
 
 const WEEKS = 52;
-const MODES = (Object.keys(MODE_FACTORS) as CommuteMode[]).filter((m) => m !== "none");
+const MODES = typedKeys(MODE_FACTORS).filter((m) => m !== "none");
 
 const clampNumber = (raw: string, min: number, max: number) => {
   const n = Number(raw);
