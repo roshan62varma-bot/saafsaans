@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible, Fraunces, Noto_Sans_Devanagari } from "next/font/google";
 import "./globals.css";
@@ -31,7 +32,7 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" className={`${body.variable} ${display.variable} ${deva.variable} antialiased`}>
       <body className="min-h-dvh">{children}</body>
