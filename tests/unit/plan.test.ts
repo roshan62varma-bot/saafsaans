@@ -4,7 +4,10 @@ import { buildRulePlan, exposureAvoidedUg } from "@/lib/engine/routine";
 import type { FactSheet, TimeWindow } from "@/lib/types";
 import { NOW, makeAir, makeHourly, makeProfile, reading } from "../fixtures";
 
-const win = (avgPm25: number, category: TimeWindow["aqi"]["category"] = "moderate"): TimeWindow => ({
+const win = (
+  avgPm25: number,
+  category: TimeWindow["aqi"]["category"] = "moderate",
+): TimeWindow => ({
   start: "2026-11-17T13:00",
   end: "2026-11-17T15:00",
   avgPm25,
@@ -95,9 +98,13 @@ describe("buildRulePlan", () => {
       bestWindow: win(70),
       worstWindow: win(200),
     };
-    const block = buildRulePlan(clean, profile).routine.find((b) => b.activity === "Outdoor exercise or play");
+    const block = buildRulePlan(clean, profile).routine.find(
+      (b) => b.activity === "Outdoor exercise or play",
+    );
     expect(block?.time).toBe("13:00–15:00");
-    expect(block?.impact).toBe("About 234 µg less PM2.5 inhaled per hour than in the dirtiest window.");
+    expect(block?.impact).toBe(
+      "About 234 µg less PM2.5 inhaled per hour than in the dirtiest window.",
+    );
   });
 
   it("keeps exercise indoors when even the best window is poor", () => {
@@ -106,7 +113,9 @@ describe("buildRulePlan", () => {
       aqi: { value: 150, category: "moderate", dominant: "pm25" },
       bestWindow: win(100, "poor"),
     };
-    expect(buildRulePlan(f, profile).routine.some((b) => b.activity === "Exercise indoors")).toBe(true);
+    expect(buildRulePlan(f, profile).routine.some((b) => b.activity === "Exercise indoors")).toBe(
+      true,
+    );
   });
 
   it("handles households without children, commute or forecast windows", () => {
@@ -135,7 +144,13 @@ describe("buildRulePlan", () => {
     const f: FactSheet = {
       ...facts,
       commuteSwaps: [
-        { from: "car_petrol", to: "cycle", weeklyCo2KgSaved: 10, weeklyPmGramsSaved: 1, exposureChangePct: 40 },
+        {
+          from: "car_petrol",
+          to: "cycle",
+          weeklyCo2KgSaved: 10,
+          weeklyPmGramsSaved: 1,
+          exposureChangePct: 40,
+        },
       ],
     };
     const block = buildRulePlan(f, profile).routine.find((b) => b.time === "Commute");

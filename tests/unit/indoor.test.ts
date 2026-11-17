@@ -47,7 +47,10 @@ const ventilation: TimeWindow = {
   aqi: { value: 200, category: "moderate", dominant: "pm25" },
 };
 
-const ctx = (overrides: Parameters<typeof makeProfile>[0] = {}, vent: TimeWindow | null = ventilation) => {
+const ctx = (
+  overrides: Parameters<typeof makeProfile>[0] = {},
+  vent: TimeWindow | null = ventilation,
+) => {
   const profile = makeProfile(overrides);
   return {
     profile,
@@ -78,7 +81,11 @@ describe("indoorHacks", () => {
 
   it("prioritises sealing for leaky homes and kitchen exhaust for biomass cooking", () => {
     const leaky = indoorHacks(ctx({ sealing: "leaky", budget: "low", cookingFuel: "biomass" }));
-    expect(leaky.slice(0, 3).map((h) => h.id)).toEqual(["kitchen-exhaust", "diy-box-fan", "seal-gaps"]);
+    expect(leaky.slice(0, 3).map((h) => h.id)).toEqual([
+      "kitchen-exhaust",
+      "diy-box-fan",
+      "seal-gaps",
+    ]);
     expect(leaky.find((h) => h.id === "seal-gaps")?.impact).toMatch(/Cuts the outdoor smog/);
   });
 

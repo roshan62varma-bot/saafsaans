@@ -209,3 +209,16 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
+
+export interface ForecastPoint {
+  time: string;
+  pm25: number;
+  aqi: number;
+  category: AqiCategory;
+}
+
+/** Fast, AI-free dashboard payload. */
+export interface InsightsResponse {
+  facts: FactSheet;
+  forecast: ForecastPoint[];
+}

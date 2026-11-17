@@ -77,10 +77,9 @@ describe("findWindow edge cases", () => {
   });
 
   it("ignores hours outside the allowed range", () => {
-    const readings = [
-      reading("2026-11-17T02:00", 5),
-      reading("2026-11-17T03:00", 5),
-    ] as Parameters<typeof findWindow>[0];
+    const readings = [reading("2026-11-17T02:00", 5), reading("2026-11-17T03:00", 5)] as Parameters<
+      typeof findWindow
+    >[0];
     expect(findWindow(readings, { ...opts, hours: { start: 6, end: 22 } })).toBeNull();
   });
 });

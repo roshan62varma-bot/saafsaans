@@ -78,6 +78,15 @@ describe("computeAqi", () => {
     });
   });
 
+  it("converts hourly ozone to the 8-hour scale before indexing", () => {
+    // 180 µg/m³ hourly ≡ 100 µg/m³ 8-hour → sub-index 100
+    expect(computeAqi({ pm25: null, pm10: null, no2: null, o3: 180 })).toEqual({
+      value: 100,
+      category: "satisfactory",
+      dominant: "o3",
+    });
+  });
+
   it("returns null when nothing is reported", () => {
     expect(computeAqi({ pm25: null, pm10: null, no2: null, o3: null })).toBeNull();
   });

@@ -34,7 +34,9 @@ describe("sensitivityBoost", () => {
   });
 
   it("caps combined vulnerabilities at 2", () => {
-    expect(sensitivityBoost(member({ ageGroup: "elderly", conditions: ["copd", "heart"] }))).toBe(2);
+    expect(sensitivityBoost(member({ ageGroup: "elderly", conditions: ["copd", "heart"] }))).toBe(
+      2,
+    );
   });
 });
 

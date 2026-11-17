@@ -2,6 +2,7 @@ import {
   AQI_CATEGORIES,
   AQI_MAX,
   CPCB_BREAKPOINTS,
+  O3_HOURLY_TO_8H,
   PM25_PER_CIGARETTE,
 } from "@/lib/constants";
 import type { AirReading, AqiCategory, AqiResult, Pollutant } from "@/lib/types";
@@ -48,7 +49,7 @@ export function computeAqi(reading: Pick<AirReading, Pollutant>): AqiResult | nu
   for (const pollutant of POLLUTANTS) {
     const c = reading[pollutant];
     if (c === null || !Number.isFinite(c)) continue;
-    const value = subIndex(pollutant, c);
+    const value = subIndex(pollutant, pollutant === "o3" ? c * O3_HOURLY_TO_8H : c);
     if (best === null || value > best.value) best = { value, dominant: pollutant };
   }
   return best && { ...best, category: categorize(best.value) };

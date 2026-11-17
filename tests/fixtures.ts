@@ -13,7 +13,11 @@ export function winterPm25(hour: number): number {
   return 250;
 }
 
-export function reading(time: string, pm25: number | null, extra: Partial<AirReading> = {}): AirReading {
+export function reading(
+  time: string,
+  pm25: number | null,
+  extra: Partial<AirReading> = {},
+): AirReading {
   return {
     time,
     epoch: toEpoch(time),

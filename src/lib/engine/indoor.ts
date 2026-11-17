@@ -103,7 +103,8 @@ const CATALOG: readonly CatalogEntry[] = [
     }),
   },
   {
-    priority: ({ profile }) => (profile.sealing === "leaky" ? 8 : profile.sealing === "average" ? 5 : 1),
+    priority: ({ profile }) =>
+      profile.sealing === "leaky" ? 8 : profile.sealing === "average" ? 5 : 1,
     build: ({ profile, outdoorPm25, purifier }) => {
       const before = indoorPm25(outdoorPm25, profile.sealing, purifier.roomVolumeM3, 0);
       const after = indoorPm25(outdoorPm25, "sealed", purifier.roomVolumeM3, 0);
@@ -120,7 +121,8 @@ const CATALOG: readonly CatalogEntry[] = [
     },
   },
   {
-    priority: ({ ventilation, outdoorPm25 }) => (ventilation && ventilation.avgPm25 < outdoorPm25 ? 7 : 4),
+    priority: ({ ventilation, outdoorPm25 }) =>
+      ventilation && ventilation.avgPm25 < outdoorPm25 ? 7 : 4,
     build: ({ ventilation }) => ({
       id: "smart-ventilation",
       title: "Keep windows shut — air out only in the cleanest hour",
@@ -135,7 +137,8 @@ const CATALOG: readonly CatalogEntry[] = [
     }),
   },
   {
-    priority: ({ profile }) => (profile.cookingFuel === "biomass" || profile.cookingFuel === "kerosene" ? 9 : 6),
+    priority: ({ profile }) =>
+      profile.cookingFuel === "biomass" || profile.cookingFuel === "kerosene" ? 9 : 6,
     build: () => ({
       id: "kitchen-exhaust",
       title: "Run the kitchen exhaust and cover pans",
@@ -144,7 +147,8 @@ const CATALOG: readonly CatalogEntry[] = [
         "Use lids, avoid deep-frying on smog days, and keep the kitchen door closed while cooking.",
       ],
       cost: "free",
-      impact: "Frying and tadka can push kitchen PM2.5 above 500 µg/m³; ventilated cooking cuts this by half or more.",
+      impact:
+        "Frying and tadka can push kitchen PM2.5 above 500 µg/m³; ventilated cooking cuts this by half or more.",
     }),
   },
   {
@@ -170,7 +174,8 @@ const CATALOG: readonly CatalogEntry[] = [
         "Never allow smoking inside the home or car.",
       ],
       cost: "free",
-      impact: "These are concentrated PM2.5 sources released straight into the room you breathe in.",
+      impact:
+        "These are concentrated PM2.5 sources released straight into the room you breathe in.",
     }),
   },
   {

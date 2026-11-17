@@ -29,7 +29,8 @@ function exerciseBlock(facts: FactSheet): RoutineBlock {
     return {
       time: "Any time",
       activity: "Exercise indoors",
-      advice: "Do yoga, skipping or a home workout in your cleanest room instead of a run or walk outside.",
+      advice:
+        "Do yoga, skipping or a home workout in your cleanest room instead of a run or walk outside.",
       why: "Hard exercise makes you breathe 3–4× more air, pulling much more PM2.5 deep into the lungs.",
       impact: `Skips roughly ${Math.round(facts.pm25 * EXERCISE_BREATHING_M3H)} µg of PM2.5 per hour of outdoor exercise.`,
     };
@@ -131,7 +132,10 @@ export function buildRulePlan(facts: FactSheet, profile: Profile): Plan {
   const risk = householdRisk(facts.memberRisks);
   const topSwap = facts.commuteSwaps[0];
   const topActions = [
-    facts.indoorHacks[0] && { action: facts.indoorHacks[0].title, impact: facts.indoorHacks[0].impact },
+    facts.indoorHacks[0] && {
+      action: facts.indoorHacks[0].title,
+      impact: facts.indoorHacks[0].impact,
+    },
     topSwap && {
       action: `Commute by ${MODE_FACTORS[topSwap.to].label.toLowerCase()}`,
       impact: `${topSwap.weeklyCo2KgSaved} kg CO2 and ${topSwap.weeklyPmGramsSaved} g PM2.5 saved per week.`,

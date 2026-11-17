@@ -102,7 +102,9 @@ export const planSchema = z.object({
   headline: z.string().describe("One line: AQI category, value and place."),
   summary: z
     .string()
-    .describe("2–3 sentences: what today's air means for this family, using the cigarette equivalence."),
+    .describe(
+      "2–3 sentences: what today's air means for this family, using the cigarette equivalence.",
+    ),
   routine: z
     .array(
       z.object({

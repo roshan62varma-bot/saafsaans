@@ -36,9 +36,7 @@ export function upcoming(
 ): Pm25Reading[] {
   const from = nowEpoch - HOUR_MS;
   const to = nowEpoch + lookaheadHours * HOUR_MS;
-  return hourly.filter(
-    (r): r is Pm25Reading => r.pm25 !== null && r.epoch > from && r.epoch <= to,
-  );
+  return hourly.filter((r): r is Pm25Reading => r.pm25 !== null && r.epoch > from && r.epoch <= to);
 }
 
 interface WindowOptions {
@@ -60,7 +58,8 @@ export function findWindow(
     const run = readings.slice(i, i + length);
     if (!isValidRun(run, hours)) continue;
     const mean = run.reduce((sum, r) => sum + r.pm25, 0) / length;
-    const better = pick === "best" ? mean < (chosen?.mean ?? Infinity) : mean > (chosen?.mean ?? -Infinity);
+    const better =
+      pick === "best" ? mean < (chosen?.mean ?? Infinity) : mean > (chosen?.mean ?? -Infinity);
     if (better) chosen = { index: i, mean };
   }
   if (!chosen) return null;

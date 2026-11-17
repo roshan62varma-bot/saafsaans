@@ -36,7 +36,11 @@ export function weeklyCommuteEmissions(
 }
 
 /** Whether a mode is a realistic alternative for this commute. */
-export function isFeasibleAlternative(from: CommuteMode, to: CommuteMode, distanceKm: number): boolean {
+export function isFeasibleAlternative(
+  from: CommuteMode,
+  to: CommuteMode,
+  distanceKm: number,
+): boolean {
   if (to === from) return false;
   if (to === "walk") return distanceKm <= ACTIVE_MODE_MAX_KM.walk;
   if (to === "cycle") return distanceKm <= ACTIVE_MODE_MAX_KM.cycle;
@@ -56,7 +60,8 @@ export function compareModes(commute: Commute, to: CommuteMode, ambientPm25: num
     to,
     weeklyCo2KgSaved: round(before.co2Kg - after.co2Kg),
     weeklyPmGramsSaved: round(before.pmG - after.pmG, 2),
-    exposureChangePct: doseBefore > 0 ? Math.round(((doseAfter - doseBefore) / doseBefore) * 100) : 0,
+    exposureChangePct:
+      doseBefore > 0 ? Math.round(((doseAfter - doseBefore) / doseBefore) * 100) : 0,
   };
 }
 
@@ -66,7 +71,9 @@ export function compareModes(commute: Commute, to: CommuteMode, ambientPm25: num
  */
 export function commuteSwaps(commute: Commute, ambientPm25: number): CommuteSwap[] {
   if (commute.mode === "none" || commute.distanceKm <= 0 || commute.daysPerWeek <= 0) return [];
-  return ALTERNATIVE_MODES.filter((to) => isFeasibleAlternative(commute.mode, to, commute.distanceKm))
+  return ALTERNATIVE_MODES.filter((to) =>
+    isFeasibleAlternative(commute.mode, to, commute.distanceKm),
+  )
     .map((to) => compareModes(commute, to, ambientPm25))
     .filter((s) => s.weeklyCo2KgSaved > 0 || s.weeklyPmGramsSaved > 0)
     .sort((a, b) => b.weeklyCo2KgSaved - a.weeklyCo2KgSaved);
@@ -99,7 +106,8 @@ export function householdSwaps(profile: Pick<Profile, "cookingFuel">): Household
     {
       id: "no-open-burning",
       title: "Compost or hand over leaves and waste — never burn",
-      change: "Use the society compost pit or municipal pickup instead of burning dry leaves or garbage.",
+      change:
+        "Use the society compost pit or municipal pickup instead of burning dry leaves or garbage.",
       weeklyPmGramsSaved: pm.openBurning,
       weeklyCo2KgSaved: HOUSEHOLD_CO2_KG_PER_WEEK.openBurning,
       impact: `Avoids about ${pm.openBurning} g of PM2.5 a week at street level, where children walk to school.`,
@@ -107,7 +115,8 @@ export function householdSwaps(profile: Pick<Profile, "cookingFuel">): Household
     {
       id: "inverter-not-genset",
       title: "Use an inverter battery instead of a diesel generator",
-      change: "Run essential loads on an inverter during power cuts; GRAP bans diesel gensets in severe smog.",
+      change:
+        "Run essential loads on an inverter during power cuts; GRAP bans diesel gensets in severe smog.",
       weeklyPmGramsSaved: pm.dieselGenerator,
       weeklyCo2KgSaved: HOUSEHOLD_CO2_KG_PER_WEEK.dieselGenerator,
       impact: `Avoids about ${pm.dieselGenerator} g of PM2.5 and ${HOUSEHOLD_CO2_KG_PER_WEEK.dieselGenerator} kg of CO2 a week.`,
@@ -118,7 +127,8 @@ export function householdSwaps(profile: Pick<Profile, "cookingFuel">): Household
       change: "Use bed nets, window mesh or electric vaporisers indoors.",
       weeklyPmGramsSaved: pm.mosquitoCoil,
       weeklyCo2KgSaved: 0,
-      impact: "One burning coil releases as much PM2.5 as roughly 100 cigarettes — inside a closed bedroom.",
+      impact:
+        "One burning coil releases as much PM2.5 as roughly 100 cigarettes — inside a closed bedroom.",
     },
   );
 

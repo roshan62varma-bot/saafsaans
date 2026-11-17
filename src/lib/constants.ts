@@ -55,6 +55,13 @@ export const CPCB_BREAKPOINTS: Record<Pollutant, readonly Breakpoint[]> = {
 
 export const AQI_MAX = 500;
 
+/**
+ * CPCB's ozone breakpoints are for 8-hour averages, but forecasts are hourly. India's
+ * NAAQS sets 100 µg/m³ (8 h) and 180 µg/m³ (1 h) as equivalent limits, so hourly ozone is
+ * scaled by 100/180 before indexing. Without this, normal midday ozone peaks look "Moderate".
+ */
+export const O3_HOURLY_TO_8H = 100 / 180;
+
 /** Upper AQI bound (inclusive) of each CPCB category, in ascending order. */
 export const AQI_CATEGORIES: readonly { category: AqiCategory; max: number }[] = [
   { category: "good", max: 50 },
@@ -78,7 +85,8 @@ export const AQI_LABELS: Record<AqiCategory, string> = {
 export const AQI_HEALTH: Record<AqiCategory, string> = {
   good: "Minimal impact.",
   satisfactory: "Minor breathing discomfort for sensitive people.",
-  moderate: "Breathing discomfort for people with lung or heart disease, children and older adults.",
+  moderate:
+    "Breathing discomfort for people with lung or heart disease, children and older adults.",
   poor: "Breathing discomfort for most people on prolonged exposure.",
   very_poor: "Respiratory illness on prolonged exposure.",
   severe: "Affects healthy people and seriously impacts those with existing disease.",
