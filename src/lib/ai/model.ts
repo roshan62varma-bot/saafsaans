@@ -1,30 +1,86 @@
 import "server-only";
 import { createGoogle, type GoogleLanguageModelOptions } from "@ai-sdk/google";
-import type { LanguageModel } from "ai";
-
-export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+import type { LanguageModelV4, LanguageModelV4CallOptions } from "@ai-sdk/provider";
 
 /**
- * Returns the configured Gemini model, or `null` when no API key is set — callers then
- * fall back to the deterministic engine so the app keeps working.
+ * Fast, low-cost Flash-Lite model: the engine has already done the reasoning, so the model
+ * only phrases pre-computed facts. Measured at ~1 s per call.
+ */
+export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
+/** Used automatically when the primary model errors, is overloaded or times out. */
+export const FALLBACK_GEMINI_MODEL = "gemini-3-flash-preview";
+/** Budget for one model attempt before failing over to the next. */
+export const PER_MODEL_TIMEOUT_MS = 12_000;
+
+/**
+ * Wraps several models into one that tries each in turn. Failover happens on any error,
+ * including a per-attempt timeout, but never when the caller itself aborted.
+ * Works for both `doGenerate` and `doStream` (errors raised before the stream starts).
+ */
+export function withFailover(
+  models: readonly [LanguageModelV4, ...LanguageModelV4[]],
+  perModelTimeoutMs = PER_MODEL_TIMEOUT_MS,
+): LanguageModelV4 {
+  const [primary] = models;
+
+  async function attempt<R>(
+    options: LanguageModelV4CallOptions,
+    call: (m: LanguageModelV4, o: LanguageModelV4CallOptions) => PromiseLike<R>,
+  ): Promise<R> {
+    let lastError: unknown;
+    for (const model of models) {
+      const signals = [AbortSignal.timeout(perModelTimeoutMs)];
+      if (options.abortSignal) signals.push(options.abortSignal);
+      try {
+        return await call(model, { ...options, abortSignal: AbortSignal.any(signals) });
+      } catch (error) {
+        if (options.abortSignal?.aborted) throw error;
+        lastError = error;
+      }
+    }
+    throw lastError;
+  }
+
+  return {
+    specificationVersion: "v4",
+    provider: primary.provider,
+    modelId: models.map((m) => m.modelId).join(" → "),
+    supportedUrls: primary.supportedUrls,
+    doGenerate: (options) => attempt(options, (m, o) => m.doGenerate(o)),
+    doStream: (options) => attempt(options, (m, o) => m.doStream(o)),
+  };
+}
+
+/**
+ * Returns the configured Gemini model chain, or `null` when no API key is set — callers
+ * then fall back to the deterministic engine so the app keeps working.
  */
 export function getModel(
   env: Readonly<Record<string, string | undefined>> = process.env,
-): LanguageModel | null {
+): LanguageModelV4 | null {
   const apiKey = env.GOOGLE_GENERATIVE_AI_API_KEY?.trim();
   if (!apiKey) return null;
-  const modelId = env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
-  return createGoogle({ apiKey })(modelId);
+  const google = createGoogle({ apiKey });
+  const primary = env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
+  const ids = [...new Set([primary, FALLBACK_GEMINI_MODEL])];
+  return withFailover(ids.map((id) => google(id)) as [LanguageModelV4, ...LanguageModelV4[]]);
 }
 
-/** Block harmful content at medium probability and above in every category. */
-export const SAFETY_OPTIONS = {
+/**
+ * Provider options for every call:
+ * - low thinking keeps latency and cost down (supported by every Gemini 3 Flash model);
+ * - safety filters block content with a high probability of harm. (Medium-and-above was
+ *   measured to block ordinary child-health questions such as "can my asthmatic son play
+ *   outside?", which is exactly what families need to ask.)
+ */
+export const PROVIDER_OPTIONS = {
   google: {
+    thinkingConfig: { thinkingLevel: "low" },
     safetySettings: [
-      { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-      { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-      { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
-      { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+      { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+      { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+      { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+      { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
     ],
   } satisfies GoogleLanguageModelOptions,
 };

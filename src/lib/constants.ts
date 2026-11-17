@@ -300,4 +300,5 @@ export const CACHE_TTL = {
 export const RATE_LIMIT = { windowMs: 60_000, max: 12 } as const;
 
 export const UPSTREAM_TIMEOUT_MS = 8_000;
-export const AI_TIMEOUT_MS = 20_000;
+/** Whole-call budget, covering failover across models. */
+export const AI_TIMEOUT_MS = 30_000;

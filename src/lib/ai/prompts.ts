@@ -52,6 +52,7 @@ export function planSystemPrompt(language: Language): string {
   return `${CORE_RULES}
 Task: write today's personalised plan for this household as JSON matching the schema.
 - routine: 5–7 time blocks in chronological order covering morning, school run (only if there are children), commute (only if they commute), exercise/outdoor time (use bestOutdoorWindow; if AQI is Poor or worse keep exercise indoors), ventilation (use bestVentilationHour), cooking and sleep.
+- Every routine "impact" must quote at least one figure from FACTS (e.g. exposure.timingSavingUgPerHour, exposure.outdoorExerciseUgPerHour, purifier.indoorPm25With, commuteSwaps, a window's avgPm25 or reference.roadsideExcessPct).
 - memberNotes: one entry for every household member, tailored to their risk level.
 - topActions: the 3 changes with the largest quantified impact, drawn from commuteSwaps, indoorHacks and householdSwaps.
 Write all text in ${LANGUAGE_NAME[language]}. Keep each field under 220 characters.`;

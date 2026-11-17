@@ -4,7 +4,7 @@
 
 SaafSaans is a GenAI assistant that helps families and communities get through severe winter smog. It combines a live air-quality forecast for the family's location with details about their household. From that it plans a **lower-exposure day**, ranks **indoor-air fixes** for their home and budget, and suggests **cleaner alternatives**. Each recommendation states **its measured impact**.
 
-**Live app:** _added after deployment_
+**Live app:** https://saafsaans.vercel.app
 
 ---
 
@@ -62,7 +62,9 @@ Pure functions with no I/O, which makes them easy to test and audit:
 - Gemini receives the **fact sheet as its only source of numbers** and returns a plan as **schema-validated JSON** (AI SDK `Output.object` + Zod).
 - **Grounding guard** (`grounding.ts`): every significant number in the model's output must exist in the fact sheet. Small counts, clock times and well-known constants such as "N95" are exempt. If more than two numbers are ungrounded, the answer is discarded and the rule-based plan is shown. A test confirms that the engine's own plan passes this guard with **zero** ungrounded numbers.
 - The **chat** streams plain text grounded in the same facts. The **advisory** is written for its audience and language.
-- If there is no API key, a timeout, a quota error or invalid output, the app **degrades gracefully** to the rule engine. The UI shows which source produced the plan.
+- **Model failover** (`model.ts`): calls go to `gemini-3.5-flash-lite` (≈1 s, low cost). If it errors, is overloaded or exceeds its 12 s budget, the call fails over to `gemini-3-flash-preview`. Thinking is set to `low`, because the engine has already done the reasoning.
+- **Honest streaming** (`toChatTextStream`): if a chat answer is cut off (overload, token limit) or blocked by a safety filter, it ends with a short notice in the user's language instead of stopping silently.
+- If there is no API key, both models fail, or the output is invalid, the app **degrades gracefully** to the rule engine. The UI shows which source produced the plan.
 
 ---
 

@@ -20,11 +20,15 @@ export async function POST(request: Request): Promise<Response> {
         "The AI assistant is not configured. Your plan and dashboard still work.",
       );
     }
-    const result = streamChat(model, facts, profile, messages, (error) =>
+    const stream = streamChat(model, facts, profile, messages, (error) =>
       console.warn("Gemini chat stream failed", error instanceof Error ? error.message : "unknown"),
     );
-    return result.toTextStreamResponse({
-      headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
     });
   } catch (error) {
     return handleRouteError(error);
