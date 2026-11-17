@@ -125,6 +125,36 @@ describe("withFailover", () => {
     expect(await generatePlanFree(model)).toBe("Hello");
   });
 
+  it("does not cut off a stream that outlives the connection budget", async () => {
+    const slow = new MockLanguageModelV4({
+      doStream: async (opts) => ({
+        stream: new ReadableStream({
+          async start(c) {
+            c.enqueue({ type: "text-start", id: "t" });
+            await new Promise((r) => setTimeout(r, 60));
+            if (opts.abortSignal?.aborted) return c.error(new Error("aborted mid-stream"));
+            c.enqueue({ type: "text-delta", id: "t", delta: "slow but complete" });
+            c.enqueue({ type: "text-end", id: "t" });
+            c.enqueue({
+              type: "finish",
+              finishReason: { unified: "stop", raw: undefined },
+              usage: {
+                inputTokens: { total: 1, noCache: 1, cacheRead: undefined, cacheWrite: undefined },
+                outputTokens: { total: 1, text: 1, reasoning: undefined },
+              },
+            });
+            c.close();
+          },
+        }),
+      }),
+    });
+    const model = withFailover([slow], 20);
+    const text = await new Response(
+      streamChat(model, facts, profile, [{ role: "user", content: "Hi" }], vi.fn()),
+    ).text();
+    expect(text).toBe("slow but complete");
+  });
+
   it("throws the last error when every model fails", async () => {
     await expect(generatePlanFree(withFailover([failing(), failing()]))).rejects.toThrow(
       "high demand",
@@ -251,6 +281,20 @@ ${CHAT_NOTICES.hi.interrupted}`);
 
 ${CHAT_NOTICES.en.interrupted}`,
     );
+  });
+
+  it("ends with a notice when the stream throws", async () => {
+    async function* broken() {
+      yield { type: "text-delta", text: "Part" };
+      throw new Error("pipe");
+    }
+    const onError = vi.fn();
+    expect(await read(toChatTextStream(broken(), "en", onError))).toBe(
+      `Part
+
+${CHAT_NOTICES.en.interrupted}`,
+    );
+    expect(onError).toHaveBeenCalled();
   });
 
   it("explains safety blocks and empty answers", async () => {

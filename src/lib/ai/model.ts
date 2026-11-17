@@ -14,7 +14,7 @@ export const PER_MODEL_TIMEOUT_MS = 12_000;
 
 /**
  * Wraps several models into one that tries each in turn. Failover happens on any error,
- * including a per-attempt timeout, but never when the caller itself aborted.
+ * including a per-attempt connection timeout, but never when the caller itself aborted.
  * Works for both `doGenerate` and `doStream` (errors raised before the stream starts).
  */
 export function withFailover(
@@ -29,13 +29,24 @@ export function withFailover(
   ): Promise<R> {
     let lastError: unknown;
     for (const model of models) {
-      const signals = [AbortSignal.timeout(perModelTimeoutMs)];
-      if (options.abortSignal) signals.push(options.abortSignal);
+      // The budget covers connecting to the model only. Once a call resolves (for a stream:
+      // once it has started) the timer is cleared, so a slow but healthy answer is never cut.
+      const controller = new AbortController();
+      const timer = setTimeout(
+        () => controller.abort(new Error("model timeout")),
+        perModelTimeoutMs,
+      );
+      const forwardAbort = () => controller.abort(options.abortSignal?.reason);
+      options.abortSignal?.addEventListener("abort", forwardAbort, { once: true });
+      if (options.abortSignal?.aborted) forwardAbort();
       try {
-        return await call(model, { ...options, abortSignal: AbortSignal.any(signals) });
+        return await call(model, { ...options, abortSignal: controller.signal });
       } catch (error) {
+        options.abortSignal?.removeEventListener("abort", forwardAbort);
         if (options.abortSignal?.aborted) throw error;
         lastError = error;
+      } finally {
+        clearTimeout(timer);
       }
     }
     throw lastError;

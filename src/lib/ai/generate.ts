@@ -99,18 +99,24 @@ export function toChatTextStream(
     async start(controller) {
       let wrote = false;
       let notice: string | null = null;
-      for await (const part of parts) {
-        if (part.type === "text-delta" && "text" in part) {
-          controller.enqueue(encoder.encode(part.text));
-          wrote ||= part.text.length > 0;
-        } else if (part.type === "error" && "error" in part) {
-          onError(part.error);
-          notice = notices.interrupted;
-        } else if (part.type === "finish" && "finishReason" in part) {
-          if (part.finishReason === "content-filter")
-            notice = wrote ? notices.interrupted : notices.declined;
-          else if (part.finishReason !== "stop" || !wrote) notice ??= notices.interrupted;
+      try {
+        for await (const part of parts) {
+          if (part.type === "text-delta" && "text" in part) {
+            controller.enqueue(encoder.encode(part.text));
+            wrote ||= part.text.length > 0;
+          } else if (part.type === "error" && "error" in part) {
+            onError(part.error);
+            notice = notices.interrupted;
+          } else if (part.type === "finish" && "finishReason" in part) {
+            if (part.finishReason === "content-filter")
+              notice = wrote ? notices.interrupted : notices.declined;
+            else if (part.finishReason !== "stop" || !wrote) notice ??= notices.interrupted;
+          }
         }
+      } catch (error) {
+        // A thrown stream error (e.g. an abort) must still end in a readable answer.
+        onError(error);
+        notice = notices.interrupted;
       }
       if (notice)
         controller.enqueue(
