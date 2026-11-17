@@ -5,22 +5,9 @@ import { householdRisk } from "@/lib/engine/risk";
 import { hourLabel } from "@/lib/engine/windows";
 import type { FactSheet, Plan, Profile, RoutineBlock, TimeWindow } from "@/lib/types";
 
-/** Breathing rate during moderate exercise, m³/h (US EPA Exposure Factors Handbook). */
-const EXERCISE_BREATHING_M3H = 1.8;
 const POOR_RANK = categoryRank("poor");
 
 const span = (w: TimeWindow) => `${hourLabel(w.start)}–${hourLabel(w.end)}`;
-
-/** PM2.5 (µg) not inhaled by moving an activity from the worst to the best window. */
-export function exposureAvoidedUg(
-  worst: TimeWindow | null,
-  best: TimeWindow | null,
-  hours: number,
-  breathingM3h = EXERCISE_BREATHING_M3H,
-): number {
-  if (!worst || !best) return 0;
-  return Math.max(0, Math.round((worst.avgPm25 - best.avgPm25) * breathingM3h * hours));
-}
 
 function exerciseBlock(facts: FactSheet): RoutineBlock {
   const tooPolluted = categoryRank(facts.aqi.category) >= POOR_RANK;
@@ -32,16 +19,15 @@ function exerciseBlock(facts: FactSheet): RoutineBlock {
       advice:
         "Do yoga, skipping or a home workout in your cleanest room instead of a run or walk outside.",
       why: "Hard exercise makes you breathe 3–4× more air, pulling much more PM2.5 deep into the lungs.",
-      impact: `Skips roughly ${Math.round(facts.pm25 * EXERCISE_BREATHING_M3H)} µg of PM2.5 per hour of outdoor exercise.`,
+      impact: `Skips roughly ${facts.exposure.outdoorExerciseUgPerHour} µg of PM2.5 per hour of outdoor exercise.`,
     };
   }
-  const saved = exposureAvoidedUg(facts.worstWindow, best, 1);
   return {
     time: span(best),
     activity: "Outdoor exercise or play",
     advice: `Schedule walks, runs and children's play for ${span(best)}, the cleanest window (PM2.5 ≈ ${best.avgPm25} µg/m³).`,
     why: "Pollution swings a lot within a day; timing alone changes how much you breathe in.",
-    impact: `About ${saved} µg less PM2.5 inhaled per hour than in the dirtiest window.`,
+    impact: `About ${facts.exposure.timingSavingUgPerHour} µg less PM2.5 inhaled per hour than in the dirtiest window.`,
   };
 }
 
@@ -94,7 +80,7 @@ export function buildRulePlan(facts: FactSheet, profile: Profile): Plan {
       advice:
         "Walk on side lanes away from traffic; in a car keep windows up with air on recirculate; children over 2 can wear a fitted N95.",
       why: "Children breathe faster and are closer to exhaust height, so roadside air hits them harder.",
-      impact: "Roadside PM2.5 can be 30–50% higher than one street back.",
+      impact: `Roadside PM2.5 can be ${facts.reference.roadsideExcessPct}% higher than one street back.`,
     });
   }
 

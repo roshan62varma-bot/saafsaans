@@ -50,8 +50,11 @@ export function buildAirUrl(latitude: number, longitude: number): string {
 const toEpoch = (localTime: string, offsetSeconds: number) =>
   Date.parse(`${localTime}:00Z`) - offsetSeconds * 1000;
 
+/** Air data for one grid cell; independent of who asked or what they called the place. */
+export type CellData = Omit<AirSnapshot, "place">;
+
 /** Converts Open-Meteo's column-oriented payload into typed hourly readings. */
-export function parseAirResponse(raw: unknown, place: Place, fetchedAt: number): AirSnapshot {
+export function parseAirResponse(raw: unknown, fetchedAt: number): CellData {
   const parsed = responseSchema.safeParse(raw);
   if (!parsed.success) throw new UpstreamError("Unexpected air-quality data format.");
   const data: RawResponse = parsed.data;
@@ -70,7 +73,6 @@ export function parseAirResponse(raw: unknown, place: Place, fetchedAt: number):
 
   const c = data.current;
   return {
-    place,
     timezone: data.timezone,
     current: {
       time: c.time,
@@ -86,15 +88,17 @@ export function parseAirResponse(raw: unknown, place: Place, fetchedAt: number):
   };
 }
 
-const cache = new TtlCache<AirSnapshot>(CACHE_TTL.air);
+// Cached data depends only on coordinates; the caller's own place is attached per request.
+const cache = new TtlCache<CellData>(CACHE_TTL.air);
 
 /** Live and forecast air quality for a place, cached for 10 minutes per ~1 km cell. */
-export function getAir(place: Place): Promise<AirSnapshot> {
+export async function getAir(place: Place): Promise<AirSnapshot> {
   const key = `${roundCoord(place.latitude)},${roundCoord(place.longitude)}`;
-  return cache.getOrLoad(key, async () => {
+  const cell = await cache.getOrLoad(key, async () => {
     const raw = await fetchJson(buildAirUrl(place.latitude, place.longitude));
-    return parseAirResponse(raw, place, Date.now());
+    return parseAirResponse(raw, Date.now());
   });
+  return { ...cell, place };
 }
 
 /** Test hook. */

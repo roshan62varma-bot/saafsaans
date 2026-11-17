@@ -164,6 +164,18 @@ export interface FactSheet {
   indoorHacks: IndoorHack[];
   householdSwaps: HouseholdSwap[];
   purifier: PurifierAdvice;
+  exposure: {
+    /** µg PM2.5 inhaled per hour of outdoor exercise right now. */
+    outdoorExerciseUgPerHour: number;
+    /** µg PM2.5 avoided per hour by exercising in the best instead of the worst window. */
+    timingSavingUgPerHour: number;
+  };
+  /** Cited constants the assistant may quote. */
+  reference: {
+    whoPm25Guideline: number;
+    pm25PerCigarette: number;
+    roadsideExcessPct: string;
+  };
 }
 
 export interface PurifierAdvice {

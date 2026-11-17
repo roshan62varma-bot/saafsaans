@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildFacts } from "@/lib/engine/facts";
-import { buildRulePlan, exposureAvoidedUg } from "@/lib/engine/routine";
+import { ungroundedNumbers } from "@/lib/ai/grounding";
+import { factsForPrompt } from "@/lib/ai/prompts";
+import { exposureAvoidedUg } from "@/lib/engine/impact";
+import { buildRulePlan } from "@/lib/engine/routine";
 import type { FactSheet, TimeWindow } from "@/lib/types";
 import { NOW, makeAir, makeHourly, makeProfile, reading } from "../fixtures";
 
@@ -69,6 +72,13 @@ describe("exposureAvoidedUg", () => {
 });
 
 describe("buildRulePlan", () => {
+  it("only states numbers that are in the fact sheet (passes the AI grounding guard)", () => {
+    for (const p of [makeProfile(), makeProfile({ cookingFuel: "biomass", budget: "high" })]) {
+      const f = buildFacts(p, makeAir(), NOW);
+      expect(ungroundedNumbers(JSON.stringify(buildRulePlan(f, p)), factsForPrompt(f))).toEqual([]);
+    }
+  });
+
   const profile = makeProfile();
   const facts = buildFacts(profile, makeAir(), NOW);
 
@@ -97,6 +107,7 @@ describe("buildRulePlan", () => {
       aqi: { value: 150, category: "moderate", dominant: "pm25" },
       bestWindow: win(70),
       worstWindow: win(200),
+      exposure: { outdoorExerciseUgPerHour: 270, timingSavingUgPerHour: 234 },
     };
     const block = buildRulePlan(clean, profile).routine.find(
       (b) => b.activity === "Outdoor exercise or play",

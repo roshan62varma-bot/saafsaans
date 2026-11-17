@@ -101,6 +101,15 @@ export const PM25_PER_CIGARETTE = 22;
 /** WHO 2021 Air Quality Guideline, 24-hour PM2.5 (µg/m³). */
 export const WHO_PM25_24H = 15;
 
+/** Breathing rate during moderate exercise, m³/h (US EPA Exposure Factors Handbook, 2011). */
+export const EXERCISE_BREATHING_M3H = 1.8;
+
+/**
+ * How much higher PM2.5 is beside busy roads than one street back
+ * (Goel et al., Atmospheric Environment, 2015; Delhi on-road measurements).
+ */
+export const ROADSIDE_EXCESS_PCT = "30–50";
+
 /** Hours counted as "waking" when choosing outdoor windows (local time, inclusive start). */
 export const WAKING_HOURS = { start: 6, end: 22 } as const;
 /** Daytime hours suitable for airing the home (boundary layer is highest mid-day). */

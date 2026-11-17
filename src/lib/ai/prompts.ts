@@ -43,6 +43,8 @@ export function factsForPrompt(facts: FactSheet): string {
     indoorHacks: facts.indoorHacks,
     householdSwaps: facts.householdSwaps,
     purifier: facts.purifier,
+    exposure: facts.exposure,
+    reference: facts.reference,
   });
 }
 

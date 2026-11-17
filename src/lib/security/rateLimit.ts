@@ -45,14 +45,23 @@ export class RateLimiter {
   }
 }
 
-/** Best-effort client identifier from proxy headers set by the hosting platform. */
+/**
+ * Client identifier for rate limiting. Prefers `x-real-ip`, which Vercel sets to the
+ * connecting IP and clients cannot override; otherwise the right-most `X-Forwarded-For`
+ * entry (appended by the nearest trusted proxy). The left-most entry is client-supplied
+ * and is never trusted.
+ */
 export function clientKey(headers: Headers): string {
-  const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || headers.get("x-real-ip") || "anonymous";
+  const realIp = headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+  const forwarded = headers.get("x-forwarded-for")?.split(",").at(-1)?.trim();
+  return forwarded || "anonymous";
 }
 
 /** Per-minute AI request budget; operators can tune it with `RATE_LIMIT_MAX`. */
-export function configuredMax(env: NodeJS.ProcessEnv = process.env): number {
+export function configuredMax(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): number {
   const n = Number(env.RATE_LIMIT_MAX);
   return Number.isInteger(n) && n > 0 ? n : RATE_LIMIT.max;
 }

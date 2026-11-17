@@ -1,12 +1,20 @@
 import {
   ACTIVE_MODE_MAX_KM,
   ALTERNATIVE_MODES,
+  EXERCISE_BREATHING_M3H,
   HOUSEHOLD_CO2_KG_PER_WEEK,
   HOUSEHOLD_PM_G_PER_WEEK,
   MODE_FACTORS,
   TREE_CO2_KG_PER_YEAR,
 } from "@/lib/constants";
-import type { Commute, CommuteMode, CommuteSwap, HouseholdSwap, Profile } from "@/lib/types";
+import type {
+  Commute,
+  CommuteMode,
+  CommuteSwap,
+  HouseholdSwap,
+  Profile,
+  TimeWindow,
+} from "@/lib/types";
 
 const WEEKS_PER_YEAR = 52;
 const CAR_MODES: readonly CommuteMode[] = ["car_petrol", "car_diesel"];
@@ -15,6 +23,22 @@ const CAR_MODES: readonly CommuteMode[] = ["car_petrol", "car_diesel"];
 export function round(value: number, decimals = 1): number {
   const f = 10 ** decimals;
   return Math.round(value * f) / f;
+}
+
+/** PM2.5 (µg) inhaled per hour of moderate outdoor exercise at this concentration. */
+export function exerciseDoseUg(pm25: number): number {
+  return Math.round(Math.max(0, pm25) * EXERCISE_BREATHING_M3H);
+}
+
+/** PM2.5 (µg) not inhaled by moving an activity from the worst to the best window. */
+export function exposureAvoidedUg(
+  worst: TimeWindow | null,
+  best: TimeWindow | null,
+  hours: number,
+  breathingM3h = EXERCISE_BREATHING_M3H,
+): number {
+  if (!worst || !best) return 0;
+  return Math.max(0, Math.round((worst.avgPm25 - best.avgPm25) * breathingM3h * hours));
 }
 
 /** PM2.5 inhaled on one one-way trip, µg. */

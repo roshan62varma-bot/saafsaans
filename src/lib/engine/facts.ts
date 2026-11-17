@@ -1,5 +1,11 @@
+import { PM25_PER_CIGARETTE, ROADSIDE_EXCESS_PCT, WHO_PM25_24H } from "@/lib/constants";
 import { cigarettesEquivalent, computeAqi, pm25Aqi } from "@/lib/engine/aqi";
-import { commuteSwaps, householdSwaps } from "@/lib/engine/impact";
+import {
+  commuteSwaps,
+  exerciseDoseUg,
+  exposureAvoidedUg,
+  householdSwaps,
+} from "@/lib/engine/impact";
 import { indoorHacks, purifierAdvice } from "@/lib/engine/indoor";
 import { assessMember } from "@/lib/engine/risk";
 import { planWindows } from "@/lib/engine/windows";
@@ -38,5 +44,14 @@ export function buildFacts(profile: Profile, air: AirSnapshot, nowEpoch: number)
     }),
     householdSwaps: householdSwaps(profile),
     purifier,
+    exposure: {
+      outdoorExerciseUgPerHour: exerciseDoseUg(pm25),
+      timingSavingUgPerHour: exposureAvoidedUg(windows.worst, windows.best, 1),
+    },
+    reference: {
+      whoPm25Guideline: WHO_PM25_24H,
+      pm25PerCigarette: PM25_PER_CIGARETTE,
+      roadsideExcessPct: ROADSIDE_EXCESS_PCT,
+    },
   };
 }

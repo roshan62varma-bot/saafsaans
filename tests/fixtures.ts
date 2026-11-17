@@ -72,3 +72,25 @@ export function makeProfile(overrides: Partial<Profile> = {}): Profile {
     ...overrides,
   };
 }
+
+/** Open-Meteo air-quality payload as returned by the real API (trimmed). */
+export const rawAir = {
+  utc_offset_seconds: 19800,
+  timezone: "Asia/Kolkata",
+  current: {
+    time: "2026-11-17T08:00",
+    pm10: 300,
+    pm2_5: 180,
+    nitrogen_dioxide: 60,
+    ozone: 20,
+    us_aqi: 230,
+  },
+  hourly: {
+    time: ["2026-11-17T08:00", "2026-11-17T09:00"],
+    pm10: [300, 280],
+    pm2_5: [180, null],
+    nitrogen_dioxide: [60, 55],
+    ozone: [20, 25],
+    us_aqi: [230, 220],
+  },
+};

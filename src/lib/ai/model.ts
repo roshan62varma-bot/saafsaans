@@ -8,7 +8,9 @@ export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
  * Returns the configured Gemini model, or `null` when no API key is set — callers then
  * fall back to the deterministic engine so the app keeps working.
  */
-export function getModel(env: NodeJS.ProcessEnv = process.env): LanguageModel | null {
+export function getModel(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): LanguageModel | null {
   const apiKey = env.GOOGLE_GENERATIVE_AI_API_KEY?.trim();
   if (!apiKey) return null;
   const modelId = env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
