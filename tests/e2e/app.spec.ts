@@ -119,7 +119,8 @@ test.describe("dashboard", () => {
     await community.locator("label", { hasText: "हिन्दी" }).click();
     await community.getByRole("button", { name: "Write advisory" }).click();
     const text = community.locator("p[lang='hi']");
-    await expect(text).toContainText("AQI");
+    // Gemini may write "AQI" in Latin or Devanagari script (एक्यूआई); both are correct Hindi.
+    await expect(text).toContainText(/AQI|एक्यूआई/);
     await expect(community.getByRole("link", { name: /Share on WhatsApp/ })).toHaveAttribute(
       "rel",
       /noopener/,
